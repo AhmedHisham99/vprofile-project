@@ -30,8 +30,15 @@ jobs:
       # GitOps repo/manifest bump involved (that's hello-gitops's job).
       - name: Deploy
         run: |
-          kubectl set image deployment/hello-actions hello-actions=${IMAGE}:${GITHUB_RUN_NUMBER} -n hello-actions
-          kubectl rollout status deployment/hello-actions -n hello-actions --timeout=120s
+          {
+            set -x
+            echo "IMAGE=$IMAGE"
+            echo "KUBECONFIG=$KUBECONFIG"
+            which kubectl
+            id
+            kubectl set image deployment/hello-actions hello-actions=${IMAGE}:${GITHUB_RUN_NUMBER} -n hello-actions
+            kubectl rollout status deployment/hello-actions -n hello-actions --timeout=120s
+          } 2>&1 | tee /tmp/deploy-debug.log
 
       - name: Docker logout
         if: always()
