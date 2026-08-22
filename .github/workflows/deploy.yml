@@ -1,0 +1,38 @@
+name: build-and-deploy
+
+on:
+  push:
+    branches: [hello-actions]
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, lab]
+    env:
+      HARBOR_HOST: 192.168.56.20
+      IMAGE: 192.168.56.20/hello-actions/app
+      KUBECONFIG: /home/ghrunner/.kube/config
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          sed -i "s/RUN_NUMBER_PLACEHOLDER/${GITHUB_RUN_NUMBER}/" index.html
+          docker build -t ${IMAGE}:${GITHUB_RUN_NUMBER} .
+
+      - name: Push image
+        run: |
+          . /etc/harbor-creds.env
+          echo "$HARBOR_PASS" | docker login $HARBOR_HOST -u "$HARBOR_USER" --password-stdin
+          docker push ${IMAGE}:${GITHUB_RUN_NUMBER}
+
+      # Same shape as vprofile-cicd: CI and CD both happen right here, no
+      # GitOps repo/manifest bump involved (that's hello-gitops's job).
+      - name: Deploy
+        run: |
+          kubectl set image deployment/hello-actions hello-actions=${IMAGE}:${GITHUB_RUN_NUMBER} -n hello-actions
+          kubectl rollout status deployment/hello-actions -n hello-actions --timeout=120s
+
+      - name: Docker logout
+        if: always()
+        run: docker logout ${HARBOR_HOST} || true
