@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-gitops
+  namespace: hello-gitops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-gitops
+  template:
+    metadata:
+      labels:
+        app: hello-gitops
+    spec:
+      containers:
+        # Placeholder tag — the Jenkinsfile in this same branch bumps this
+        # via `sed` + git commit/push on every pipeline run; Argo CD picks up
+        # the change and reconciles the cluster. No kubectl involved.
+        - name: hello-gitops
+          image: 192.168.56.20/hello-gitops/app:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
