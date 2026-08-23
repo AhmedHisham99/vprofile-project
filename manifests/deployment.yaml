@@ -18,7 +18,7 @@ spec:
         # via `sed` + git commit/push on every pipeline run; Argo CD picks up
         # the change and reconciles the cluster. No kubectl involved.
         - name: hello-gitops
-          image: 192.168.56.20/hello-gitops/app:251
+          image: 192.168.56.20/hello-gitops/app:252
           ports:
             - containerPort: 80
           readinessProbe:
